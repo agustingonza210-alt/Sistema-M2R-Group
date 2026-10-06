@@ -1,0 +1,7 @@
+Django>=6.1
+djangorestframework>=3.18
+django-crispy-forms>=2.7
+crispy-bootstrap5>=2026.9
+python-dotenv>=1.0
+requests>=2.31
+Pillow>=10.0

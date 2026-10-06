@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block nav_importadores %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-6">
+    <div class="mb-3">
+      <a href="{% url 'contenedores:importadores' %}" class="text-muted text-decoration-none" style="font-size:13px;">
+        <i class="bi bi-arrow-left me-1"></i> Volver a importadores
+      </a>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-building me-2"></i>{{ titulo }}</div>
+      <div class="p-4">{% crispy form %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

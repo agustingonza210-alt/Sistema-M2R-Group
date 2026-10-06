@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'contenedores:nuevo' %}" class="btn btn-primary btn-sm">
+  <i class="bi bi-plus"></i> Nueva Carpeta
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Alertas de demurrage -->
+{% if alertas_rojas %}
+<div class="demurrage-banner rojo">
+  <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+  <div>
+    <strong>{{ alertas_rojas|length }} contenedor{{ alertas_rojas|length|pluralize:"es" }} con demurrage vencido:</strong>
+    {% for c in alertas_rojas %}
+    <a href="{% url 'contenedores:detalle' c.pk %}" class="fw-semibold text-danger ms-2">{{ c.numero }}</a>
+    ({{ c.dias_demurrage_acumulados }} día{{ c.dias_demurrage_acumulados|pluralize }}){% if not forloop.last %},{% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if alertas_amarillas %}
+<div class="demurrage-banner amarillo">
+  <i class="bi bi-clock-fill fs-5"></i>
+  <div>
+    <strong>{{ alertas_amarillas|length }} contenedor{{ alertas_amarillas|length|pluralize:"es" }} con días libres próximos a vencer:</strong>
+    {% for c in alertas_amarillas %}
+    <a href="{% url 'contenedores:detalle' c.pk %}" class="fw-semibold text-warning ms-2">{{ c.numero }}</a>
+    ({{ c.dias_libres_restantes }} día{{ c.dias_libres_restantes|pluralize }}){% if not forloop.last %},{% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Stats -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-label">Total activos</div>
+    <div class="stat-value">{{ total_activos }}</div>
+    <div class="stat-sub">contenedores</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">En tránsito</div>
+    <div class="stat-value" style="color:#1d4ed8;">{{ en_transito }}</div>
+    <div class="stat-sub">navegando</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">En aduana</div>
+    <div class="stat-value" style="color:#854d0e;">{{ en_aduana }}</div>
+    <div class="stat-sub">UY + PY</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">En terminal</div>
+    <div class="stat-value" style="color:#9a3412;">{{ en_terminal }}</div>
+    <div class="stat-sub">Asunción</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Liberados</div>
+    <div class="stat-value" style="color:#065f46;">{{ liberados }}</div>
+    <div class="stat-sub">listos para retiro</div>
+  </div>
+  <div class="stat-card" style="border-color:#fecaca;">
+    <div class="stat-label" style="color:#dc2626;">Demurrage activo</div>
+    <div class="stat-value" style="color:#dc2626;">{{ alertas_rojas|length }}</div>
+    <div class="stat-sub">días vencidos</div>
+  </div>
+</div>
+
+<!-- Contenedores activos -->
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        Operaciones activas
+        <a href="{% url 'contenedores:lista' %}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th class="ps-3">Contenedor</th>
+              <th>Estado</th>
+              <th>Importador</th>
+              <th>ETA</th>
+              <th>Demurrage</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in contenedores %}
+            <tr>
+              <td class="ps-3">
+                <a href="{% url 'contenedores:detalle' c.pk %}" class="fw-semibold text-decoration-none">{{ c.numero }}</a>
+                <div class="text-muted" style="font-size:11px;">{{ c.tipo }} · {{ c.navio|default:"—" }}</div>
+              </td>
+              <td>
+                <span class="badge-estado estado-{{ c.estado }}">{{ c.get_estado_display }}</span>
+              </td>
+              <td class="text-muted">{{ c.importador.nombre|default:"—" }}</td>
+              <td class="text-muted">
+                {% if c.eta %}{{ c.eta|date:"d/m/Y" }}{% else %}—{% endif %}
+              </td>
+              <td>
+                {% if c.semaforo_demurrage != 'sin_dato' and c.semaforo_demurrage != 'entregado' %}
+                <span class="semaforo semaforo-{{ c.semaforo_demurrage }}">
+                  <span class="semaforo-dot"></span>
+                  {% if c.semaforo_demurrage == 'rojo' %}
+                    {{ c.dias_demurrage_acumulados }}d vencido
+                  {% else %}
+                    {{ c.dias_libres_restantes }}d libres
+                  {% endif %}
+                </span>
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                <a href="{% url 'contenedores:detalle' c.pk %}" class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-folder2-open"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">
+                No hay contenedores activos. <a href="{% url 'contenedores:nuevo' %}">Crear el primero</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <!-- Próximas llegadas -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-calendar-event me-1"></i> Próximas llegadas
+      </div>
+      <div class="p-3">
+        {% for c in proximas_llegadas %}
+        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+          <div>
+            <a href="{% url 'contenedores:detalle' c.pk %}" class="fw-semibold text-decoration-none" style="font-size:13px;">{{ c.numero }}</a>
+            <div class="text-muted" style="font-size:11px;">{{ c.navio|default:"" }}</div>
+          </div>
+          <span class="badge bg-light text-dark border" style="font-size:12px;">{{ c.eta|date:"d/m" }}</span>
+        </div>
+        {% empty %}
+        <p class="text-muted text-center py-3 mb-0" style="font-size:13px;">Sin llegadas en los próximos 7 días</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

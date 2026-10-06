@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block nav_flota %}active{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">Choferes</div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th class="ps-4">Nombre</th>
+          <th>Cédula</th>
+          <th>Teléfono</th>
+          <th>Licencia</th>
+          <th>Vto. licencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in choferes %}
+        <tr>
+          <td class="ps-4 fw-medium">{{ c.nombre }}</td>
+          <td class="text-muted">{{ c.cedula|default:"—" }}</td>
+          <td class="text-muted">{{ c.telefono|default:"—" }}</td>
+          <td class="text-muted">{{ c.licencia|default:"—" }}</td>
+          <td class="text-muted">{% if c.vencimiento_licencia %}{{ c.vencimiento_licencia|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">Sin choferes registrados.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

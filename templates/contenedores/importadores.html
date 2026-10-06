@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block nav_importadores %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'contenedores:nuevo_importador' %}" class="btn btn-primary btn-sm">
+  <i class="bi bi-plus"></i> Nuevo importador
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">Importadores registrados</div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th class="ps-4">Nombre</th>
+          <th>RUC</th>
+          <th>Teléfono</th>
+          <th>Email</th>
+          <th>Contenedores activos</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for imp in importadores %}
+        <tr>
+          <td class="ps-4 fw-medium" style="font-size:13px;">{{ imp.nombre }}</td>
+          <td class="text-muted" style="font-size:13px;">{{ imp.ruc|default:"—" }}</td>
+          <td class="text-muted" style="font-size:13px;">{{ imp.telefono|default:"—" }}</td>
+          <td class="text-muted" style="font-size:13px;">{{ imp.email|default:"—" }}</td>
+          <td>
+            <span class="badge bg-primary bg-opacity-10 text-primary">
+              {{ imp.contenedores.count }}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            No hay importadores. <a href="{% url 'contenedores:nuevo_importador' %}">Agregar el primero</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

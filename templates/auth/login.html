@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block auth_content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">M2R</div>
+    <h2 class="text-center fw-bold mb-1" style="font-size:20px;">M2R Group</h2>
+    <p class="text-center text-muted mb-4" style="font-size:13px;">Sistema de Seguimiento de Contenedores</p>
+
+    {% if form.errors %}
+    <div class="alert alert-danger py-2 small">Usuario o contraseña incorrectos.</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label fw-medium" style="font-size:13px;">Usuario</label>
+        <input type="text" name="username" class="form-control" autofocus required>
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-medium" style="font-size:13px;">Contraseña</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+      <input type="hidden" name="next" value="{{ next }}">
+    </form>
+  </div>
+</div>
+{% endblock %}

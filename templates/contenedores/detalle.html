@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block nav_contenedores %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'contenedores:editar' contenedor.pk %}" class="btn btn-outline-secondary btn-sm">
+  <i class="bi bi-pencil"></i> Editar
+</a>
+<a href="{% url 'tracking:actualizar' contenedor.pk %}" class="btn btn-outline-primary btn-sm">
+  <i class="bi bi-arrow-repeat"></i> Actualizar tracking
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Demurrage alert -->
+{% if contenedor.semaforo_demurrage == 'rojo' %}
+<div class="demurrage-banner rojo">
+  <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+  <strong>Demurrage vencido: {{ contenedor.dias_demurrage_acumulados }} día{{ contenedor.dias_demurrage_acumulados|pluralize }} acumulado{{ contenedor.dias_demurrage_acumulados|pluralize }}.</strong>
+  &nbsp;El último día libre fue el {{ contenedor.ultimo_dia_libre|date:"d/m/Y" }}.
+</div>
+{% elif contenedor.semaforo_demurrage == 'amarillo' %}
+<div class="demurrage-banner amarillo">
+  <i class="bi bi-clock-fill fs-5"></i>
+  <strong>Días libres próximos a vencer:</strong> quedan {{ contenedor.dias_libres_restantes }} día{{ contenedor.dias_libres_restantes|pluralize }}.
+  El último día libre es el {{ contenedor.ultimo_dia_libre|date:"d/m/Y" }}.
+</div>
+{% endif %}
+
+<!-- Permisos bloqueantes -->
+{% if permisos_bloqueantes %}
+<div class="alert alert-warning py-2 d-flex gap-2 align-items-center" style="font-size:13px;">
+  <i class="bi bi-shield-exclamation fs-5"></i>
+  <div>
+    <strong>Permisos pendientes que bloquean el despacho:</strong>
+    {% for p in permisos_bloqueantes %}
+    <span class="ms-2">{{ p.organismo }} ({{ p.get_estado_display }})</span>{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Header carpeta -->
+<div class="card mb-4">
+  <div class="p-4">
+    <div class="d-flex align-items-start gap-4 flex-wrap">
+      <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <h2 class="fw-bold mb-0" style="font-size:22px; font-family:monospace; letter-spacing:0.04em;">
+            {{ contenedor.numero }}
+          </h2>
+          <span class="badge-estado estado-{{ contenedor.estado }}">
+            {{ contenedor.get_estado_display }}
+          </span>
+          <span class="text-muted" style="font-size:12px;">{{ contenedor.tipo }}</span>
+        </div>
+        <div class="d-flex flex-wrap gap-4 text-muted" style="font-size:13px;">
+          {% if contenedor.bl_numero %}
+          <span><i class="bi bi-file-text me-1"></i><strong>BL:</strong> {{ contenedor.bl_numero }}</span>
+          {% endif %}
+          {% if contenedor.naviera %}
+          <span><i class="bi bi-water me-1"></i>{{ contenedor.naviera }}</span>
+          {% endif %}
+          {% if contenedor.navio %}
+          <span><i class="bi bi-ship me-1"></i>{{ contenedor.navio }}</span>
+          {% endif %}
+          {% if contenedor.importador %}
+          <span><i class="bi bi-building me-1"></i>{{ contenedor.importador.nombre }}</span>
+          {% endif %}
+          {% if contenedor.camion %}
+          <span><i class="bi bi-truck me-1"></i>{{ contenedor.camion.matricula }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="text-end" style="min-width:160px;">
+        <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted);">Total gastos USD</div>
+        <div style="font-size:26px; font-weight:700; color:var(--text);">{{ gastos_usd_real|floatformat:2 }}</div>
+        {% if gastos_usd_presup %}
+        <div style="font-size:12px; color:var(--text-muted);">Presup.: {{ gastos_usd_presup|floatformat:2 }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Estado flow -->
+    {% with e=contenedor.estado %}
+    <div class="estado-flow mt-4">
+      <div class="flow-step {% if e == 'en_transito' %}active{% elif e in 'aduana_uy aduana_py terminal liberado entregado' %}done{% endif %}">
+        <div class="flow-dot"><i class="bi bi-check-lg"></i></div>
+        <span class="flow-label">En tránsito</span>
+      </div>
+      <div class="flow-step {% if e == 'aduana_uy' %}active{% elif e in 'aduana_py terminal liberado entregado' %}done{% endif %}">
+        <div class="flow-dot"><i class="bi bi-check-lg"></i></div>
+        <span class="flow-label">Aduana UY</span>
+      </div>
+      <div class="flow-step {% if e == 'aduana_py' %}active{% elif e in 'terminal liberado entregado' %}done{% endif %}">
+        <div class="flow-dot"><i class="bi bi-check-lg"></i></div>
+        <span class="flow-label">Aduana PY</span>
+      </div>
+      <div class="flow-step {% if e == 'terminal' %}active{% elif e in 'liberado entregado' %}done{% endif %}">
+        <div class="flow-dot"><i class="bi bi-check-lg"></i></div>
+        <span class="flow-label">Terminal</span>
+      </div>
+      <div class="flow-step {% if e == 'liberado' %}active{% elif e == 'entregado' %}done{% endif %}">
+        <div class="flow-dot"><i class="bi bi-check-lg"></i></div>
+        <span class="flow-label">Liberado</span>
+      </div>
+      <div class="flow-step {% if e == 'entregado' %}active{% endif %}">
+        <div class="flow-dot"><i class="bi bi-check-lg"></i></div>
+        <span class="flow-label">Entregado</span>
+      </div>
+    </div>
+    {% endwith %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Columna izquierda -->
+  <div class="col-lg-8">
+
+    <!-- Datos navieros -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <span><i class="bi bi-ship me-2"></i>Datos Navieros</span>
+      </div>
+      <div class="p-4">
+        <div class="row g-3" style="font-size:13px;">
+          <div class="col-md-4">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">Puerto origen</div>
+            <div class="fw-medium">{{ contenedor.puerto_origen|default:"—" }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">Puerto destino</div>
+            <div class="fw-medium">{{ contenedor.puerto_destino|default:"—" }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">Booking</div>
+            <div class="fw-medium">{{ contenedor.booking|default:"—" }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">ETA</div>
+            <div class="fw-medium">{% if contenedor.eta %}{{ contenedor.eta|date:"d/m/Y" }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">Llegada real</div>
+            <div class="fw-medium">{% if contenedor.fecha_llegada %}{{ contenedor.fecha_llegada|date:"d/m/Y" }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">Último día libre</div>
+            <div class="fw-medium {% if contenedor.semaforo_demurrage == 'rojo' %}text-danger{% elif contenedor.semaforo_demurrage == 'amarillo' %}text-warning{% endif %}">
+              {% if contenedor.ultimo_dia_libre %}{{ contenedor.ultimo_dia_libre|date:"d/m/Y" }}{% else %}—{% endif %}
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">Liberación</div>
+            <div class="fw-medium">{% if contenedor.fecha_liberacion %}{{ contenedor.fecha_liberacion|date:"d/m/Y" }}{% else %}—{% endif %}</div>
+          </div>
+          {% if contenedor.descripcion_carga %}
+          <div class="col-12">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">Descripción de carga</div>
+            <div>{{ contenedor.descripcion_carga }}</div>
+          </div>
+          {% endif %}
+          {% if contenedor.ncm %}
+          <div class="col-md-3">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">NCM</div>
+            <div class="fw-medium">{{ contenedor.ncm }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">Peso (kg)</div>
+            <div class="fw-medium">{{ contenedor.peso_kg|default:"—" }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-muted mb-1" style="font-size:11px; font-weight:600; text-transform:uppercase;">Valor CIF (USD)</div>
+            <div class="fw-medium">{{ contenedor.valor_cif_usd|default:"—" }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Permisos -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <span><i class="bi bi-shield-check me-2"></i>Permisos Regulatorios</span>
+        <a href="{% url 'contenedores:agregar_permiso' contenedor.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-plus"></i> Agregar
+        </a>
+      </div>
+      <div class="p-3">
+        {% for permiso in permisos %}
+        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+          <div class="d-flex align-items-center gap-3">
+            <span class="fw-semibold" style="font-size:13px;">{{ permiso.organismo }}</span>
+            <span class="permiso-badge permiso-{{ permiso.estado }}">{{ permiso.get_estado_display }}</span>
+            {% if permiso.numero_expediente %}
+            <span class="text-muted" style="font-size:12px;">Exp: {{ permiso.numero_expediente }}</span>
+            {% endif %}
+          </div>
+          <a href="{% url 'contenedores:editar_permiso' contenedor.pk permiso.pk %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-pencil"></i>
+          </a>
+        </div>
+        {% empty %}
+        <p class="text-muted text-center py-3 mb-0" style="font-size:13px;">
+          No hay permisos registrados.
+          <a href="{% url 'contenedores:agregar_permiso' contenedor.pk %}">Agregar permiso</a>
+        </p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Gastos -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <span><i class="bi bi-currency-dollar me-2"></i>Gastos</span>
+        <a href="{% url 'contenedores:agregar_gasto' contenedor.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-plus"></i> Registrar gasto
+        </a>
+      </div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:13px;">
+          <thead>
+            <tr>
+              <th class="ps-3">Categoría</th>
+              <th>Descripción</th>
+              <th>Monto</th>
+              <th>Moneda</th>
+              <th>Tipo</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for gasto in gastos %}
+            <tr>
+              <td class="ps-3">{{ gasto.get_categoria_display }}</td>
+              <td class="text-muted">{{ gasto.descripcion|default:"—" }}</td>
+              <td class="fw-medium">{{ gasto.monto|floatformat:2 }}</td>
+              <td>{{ gasto.moneda }}</td>
+              <td>
+                {% if gasto.tipo == 'real' %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Real</span>
+                {% else %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary">Presupuestado</span>
+                {% endif %}
+              </td>
+              <td class="text-muted">{{ gasto.fecha|date:"d/m/Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-3">
+                Sin gastos registrados. <a href="{% url 'contenedores:agregar_gasto' contenedor.pk %}">Registrar</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          {% if gastos %}
+          <tfoot style="background:#f8fafc;">
+            <tr class="fw-semibold">
+              <td class="ps-3" colspan="2">Total USD (real)</td>
+              <td>{{ gastos_usd_real|floatformat:2 }}</td>
+              <td>USD</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+
+    <!-- Documentos -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <span><i class="bi bi-files me-2"></i>Documentos</span>
+        <a href="{% url 'contenedores:subir_documento' contenedor.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-upload"></i> Subir
+        </a>
+      </div>
+      <div class="p-3">
+        {% for doc in documentos %}
+        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-text text-muted fs-5"></i>
+            <div>
+              <div class="fw-medium" style="font-size:13px;">{{ doc.nombre }}</div>
+              <div class="text-muted" style="font-size:11px;">{{ doc.get_tipo_display }} · {{ doc.subido_en|date:"d/m/Y" }}</div>
+            </div>
+          </div>
+          <a href="{{ doc.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-download"></i>
+          </a>
+        </div>
+        {% empty %}
+        <p class="text-muted text-center py-3 mb-0" style="font-size:13px;">
+          Sin documentos. <a href="{% url 'contenedores:subir_documento' contenedor.pk %}">Subir documento</a>
+        </p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Columna derecha: timeline -->
+  <div class="col-lg-4">
+    <div class="card mb-4">
+      <div class="card-header">
+        <span><i class="bi bi-clock-history me-2"></i>Timeline</span>
+      </div>
+      <div class="p-3">
+        <!-- Nota rápida -->
+        <form method="post" class="mb-3">
+          {% csrf_token %}
+          <input type="hidden" name="nota_rapida" value="1">
+          {% crispy nota_form %}
+        </form>
+        <hr class="my-2">
+        <div class="timeline">
+          {% for evento in eventos %}
+          <div class="timeline-item">
+            <div class="timeline-icon">
+              {% if evento.tipo == 'estado' %}<i class="bi bi-arrow-right-circle"></i>
+              {% elif evento.tipo == 'tracking' %}<i class="bi bi-broadcast"></i>
+              {% elif evento.tipo == 'permiso' %}<i class="bi bi-shield-check"></i>
+              {% elif evento.tipo == 'gasto' %}<i class="bi bi-currency-dollar"></i>
+              {% elif evento.tipo == 'documento' %}<i class="bi bi-file-earmark"></i>
+              {% else %}<i class="bi bi-chat-text"></i>
+              {% endif %}
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-title">{{ evento.titulo }}</div>
+              {% if evento.descripcion %}
+              <div class="timeline-desc">{{ evento.descripcion }}</div>
+              {% endif %}
+              <div class="timeline-time">
+                {{ evento.timestamp|date:"d/m/Y H:i" }}
+                {% if evento.usuario %} · {{ evento.usuario.get_full_name|default:evento.usuario.username }}{% endif %}
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-muted text-center py-2 mb-0" style="font-size:13px;">Sin eventos registrados.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

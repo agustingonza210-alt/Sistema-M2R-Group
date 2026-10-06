@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block nav_flota %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'flota:nuevo' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus"></i> Nuevo camión</a>
+<a href="{% url 'flota:choferes' %}" class="btn btn-outline-secondary btn-sm ms-1">Choferes</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">Flota activa — {{ camiones|length }} unidad{{ camiones|length|pluralize }}es</div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th class="ps-4">Matrícula</th>
+          <th>Vehículo</th>
+          <th>Estado</th>
+          <th>Chofer</th>
+          <th>Contenedores activos</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for camion in camiones %}
+        <tr>
+          <td class="ps-4 fw-semibold" style="font-family:monospace; font-size:14px;">{{ camion.matricula }}</td>
+          <td class="text-muted" style="font-size:13px;">{{ camion.marca }} {{ camion.modelo }} {% if camion.anio %}({{ camion.anio }}){% endif %}</td>
+          <td>
+            {% if camion.estado == 'disponible' %}
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Disponible</span>
+            {% elif camion.estado == 'en_ruta' %}
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">En ruta</span>
+            {% elif camion.estado == 'mantenimiento' %}
+            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">Mantenimiento</span>
+            {% else %}
+            <span class="badge bg-secondary bg-opacity-10 text-secondary">Inactivo</span>
+            {% endif %}
+          </td>
+          <td class="text-muted" style="font-size:13px;">{{ camion.chofer_asignado.nombre|default:"—" }}</td>
+          <td>
+            <span class="badge bg-light text-dark border">{{ camion.contenedores_activos }}</span>
+          </td>
+          <td>
+            <a href="{% url 'flota:detalle' camion.pk %}" class="btn btn-sm btn-outline-secondary">Ver</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">
+            No hay camiones registrados. <a href="{% url 'flota:nuevo' %}">Agregar</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

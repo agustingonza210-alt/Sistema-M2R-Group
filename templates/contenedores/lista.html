@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block nav_contenedores %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'contenedores:nuevo' %}" class="btn btn-primary btn-sm">
+  <i class="bi bi-plus"></i> Nueva Carpeta
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <!-- Filtros -->
+    <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+      <input type="text" name="q" value="{{ busqueda }}" class="form-control form-control-sm"
+             placeholder="Buscar contenedor, BL, nave..." style="max-width:250px;">
+      <select name="estado" class="form-select form-select-sm" style="max-width:180px;" onchange="this.form.submit()">
+        <option value="">Todos los estados</option>
+        {% for val, label in estados %}
+        <option value="{{ val }}" {% if val == estado_seleccionado %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm btn-outline-secondary">Buscar</button>
+      {% if busqueda or estado_seleccionado %}
+      <a href="{% url 'contenedores:lista' %}" class="btn btn-sm btn-link text-muted">Limpiar</a>
+      {% endif %}
+    </form>
+    <span class="text-muted" style="font-size:12px;">{{ contenedores|length }} resultado{{ contenedores|length|pluralize }}</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th class="ps-4">Contenedor</th>
+          <th>BL</th>
+          <th>Estado</th>
+          <th>Importador</th>
+          <th>ETA</th>
+          <th>Demurrage</th>
+          <th>Camión</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contenedores %}
+        <tr>
+          <td class="ps-4">
+            <a href="{% url 'contenedores:detalle' c.pk %}" class="fw-semibold text-decoration-none" style="font-family:monospace;">
+              {{ c.numero }}
+            </a>
+            <div class="text-muted" style="font-size:11px;">{{ c.tipo }} · {{ c.naviera|default:"" }}</div>
+          </td>
+          <td class="text-muted" style="font-size:13px;">{{ c.bl_numero|default:"—" }}</td>
+          <td>
+            <span class="badge-estado estado-{{ c.estado }}">{{ c.get_estado_display }}</span>
+          </td>
+          <td class="text-muted" style="font-size:13px;">{{ c.importador.nombre|default:"—" }}</td>
+          <td class="text-muted" style="font-size:13px;">
+            {% if c.eta %}{{ c.eta|date:"d/m/Y" }}{% else %}—{% endif %}
+          </td>
+          <td>
+            {% if c.semaforo_demurrage != 'sin_dato' and c.semaforo_demurrage != 'entregado' %}
+            <span class="semaforo semaforo-{{ c.semaforo_demurrage }}">
+              <span class="semaforo-dot"></span>
+              {% if c.semaforo_demurrage == 'rojo' %}
+                {{ c.dias_demurrage_acumulados }}d venc.
+              {% else %}
+                {{ c.dias_libres_restantes }}d libres
+              {% endif %}
+            </span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-muted" style="font-size:13px;">{{ c.camion.matricula|default:"—" }}</td>
+          <td>
+            <a href="{% url 'contenedores:detalle' c.pk %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-folder2-open"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-5">
+            {% if busqueda or estado_seleccionado %}
+            No se encontraron contenedores con esos filtros.
+            {% else %}
+            No hay contenedores registrados. <a href="{% url 'contenedores:nuevo' %}">Crear el primero</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

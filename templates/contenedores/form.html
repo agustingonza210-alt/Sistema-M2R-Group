@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block nav_contenedores %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-9">
+    {% if contenedor %}
+    <div class="mb-3">
+      <a href="{% url 'contenedores:detalle' contenedor.pk %}" class="text-muted text-decoration-none" style="font-size:13px;">
+        <i class="bi bi-arrow-left me-1"></i> Volver a {{ contenedor.numero }}
+      </a>
+    </div>
+    {% else %}
+    <div class="mb-3">
+      <a href="{% url 'contenedores:lista' %}" class="text-muted text-decoration-none" style="font-size:13px;">
+        <i class="bi bi-arrow-left me-1"></i> Volver a lista
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-box-seam me-2"></i>{{ titulo }}
+      </div>
+      <div class="p-4">
+        {% crispy form %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
